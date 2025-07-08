@@ -1,1 +1,0 @@
-# ConcatenatoreTesto_NAV_BC
