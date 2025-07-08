@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concatenatore di Testo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+        }
+        /* Custom styles for better aesthetics */
+        .container-card {
+            background-color: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .btn-primary {
+            background-image: linear-gradient(to right, #6366f1, #8b5cf6); /* Purple gradient */
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-primary:hover {
+            background-image: linear-gradient(to right, #4f46e5, #7c3aed); /* Darker gradient on hover */
+            transform: translateY(-2px);
+        }
+        .btn-copy {
+            background-color: #10b981; /* Emerald green */
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-copy:hover {
+            background-color: #059669; /* Darker emerald */
+            transform: translateY(-2px);
+        }
+        textarea {
+            resize: vertical; /* Allow vertical resizing */
+        }
+        /* Toggle switch styling */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #6366f1; /* Purple */
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px #6366f1;
+        }
+        input:checked + .slider:before {
+            -webkit-transform: translateX(16px);
+            -ms-transform: translateX(16px);
+            transform: translateX(16px);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="container-card w-full max-w-xl p-8 rounded-xl space-y-6">
+        <h1 class="text-3xl font-bold text-center text-gray-800">Concatenatore di Testo</h1>
+
+        <p class="text-gray-600 text-center">
+            Inserisci le tue voci di testo qui sotto, una per riga. L'applicazione le unirà in un'unica stringa.
+        </p>
+
+        <!-- Input Area -->
+        <div>
+            <label for="textInput" class="block text-sm font-medium text-gray-700 mb-2">Inserisci il tuo elenco (una voce per riga):</label>
+            <textarea id="textInput" rows="10" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Voce 1&#10;Voce 2&#10;Voce 3"></textarea>
+        </div>
+
+        <!-- T-SQL Flag -->
+        <div class="flex items-center justify-center space-x-3">
+            <label for="tSqlFlag" class="text-gray-700 font-medium">Formato T-SQL (apici singoli e virgola)</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="tSqlFlag">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <!-- Action Button -->
+        <button id="concatenateBtn" class="btn-primary w-full text-white py-3 px-4 rounded-lg font-semibold text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Concatena Testo
+        </button>
+
+        <!-- Output Area -->
+        <div id="outputContainer" class="hidden">
+            <label for="outputString" class="block text-sm font-medium text-gray-700 mb-2">Stringa Concatenata:</label>
+            <div class="relative">
+                <textarea id="outputString" readonly rows="5" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 shadow-sm sm:text-sm cursor-text"></textarea>
+                <button id="copyBtn" class="btn-copy absolute top-3 right-3 text-white py-1.5 px-3 rounded-md text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
+                    Copia
+                </button>
+            </div>
+            <p id="copyMessage" class="text-sm text-green-600 mt-2 text-center hidden">Copiato negli appunti!</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const textInput = document.getElementById('textInput');
+            const concatenateBtn = document.getElementById('concatenateBtn');
+            const outputContainer = document.getElementById('outputContainer');
+            const outputString = document.getElementById('outputString');
+            const copyBtn = document.getElementById('copyBtn');
+            const copyMessage = document.getElementById('copyMessage');
+            const tSqlFlag = document.getElementById('tSqlFlag'); // Get reference to the new flag
+
+            // Function to concatenate text
+            concatenateBtn.addEventListener('click', () => {
+                const inputText = textInput.value;
+                // Split the input by newlines, filter out empty lines, and trim whitespace
+                const lines = inputText.split('\n')
+                                       .map(line => line.trim())
+                                       .filter(line => line !== '');
+
+                let result = '';
+                if (tSqlFlag.checked) {
+                    // If T-SQL flag is active, enclose each item in single quotes and join with comma
+                    const quotedLines = lines.map(line => `'${line}'`);
+                    result = quotedLines.join(',');
+                } else {
+                    // Otherwise, join with pipe as before
+                    result = lines.join('|');
+                }
+
+                // Display the result
+                outputString.value = result;
+                outputContainer.classList.remove('hidden'); // Show the output area
+                copyMessage.classList.add('hidden'); // Hide copy message on new concatenation
+            });
+
+            // Function to copy text to clipboard
+            copyBtn.addEventListener('click', () => {
+                // Select the text in the output textarea
+                outputString.select();
+                outputString.setSelectionRange(0, 99999); // For mobile devices
+
+                try {
+                    // Copy the text to the clipboard
+                    document.execCommand('copy');
+                    copyMessage.classList.remove('hidden'); // Show copy message
+                    setTimeout(() => {
+                        copyMessage.classList.add('hidden'); // Hide message after a few seconds
+                    }, 2000);
+                } catch (err) {
+                    console.error('Impossibile copiare il testo: ', err);
+                    // Fallback for browsers where execCommand might not work or is deprecated
+                    copyMessage.textContent = 'Errore durante la copia.';
+                    copyMessage.classList.remove('hidden');
+                    copyMessage.classList.remove('text-green-600');
+                    copyMessage.classList.add('text-red-600');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
