@@ -92,7 +92,7 @@
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="container-card w-full max-w-xl p-8 rounded-xl space-y-6">
+    <div class="container-card w-full max-w-2xl p-8 rounded-xl space-y-6">
         <h1 class="text-3xl font-bold text-center text-gray-800">Concatenatore di Testo</h1>
 
         <p class="text-gray-600 text-center">
@@ -121,15 +121,21 @@
 
         <!-- Output Area -->
         <div id="outputContainer" class="hidden">
-            <label for="outputString" class="block text-sm font-medium text-gray-700 mb-2">Stringa Concatenata:</label>
+            <div class="flex justify-between items-center mb-2">
+                <label for="outputString" class="block text-sm font-medium text-gray-700">Stringa Concatenata:</label>
+                <div class="flex space-x-2">
+                     <button id="copyBtn" class="btn-copy text-white py-1 px-3 rounded-md text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
+                        Copia Output
+                    </button>
+                </div>
+            </div>
+            
             <div class="relative">
-                <textarea id="outputString" readonly rows="5" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 shadow-sm sm:text-sm cursor-text"></textarea>
-                <button id="copyBtn" class="btn-copy absolute top-3 right-3 text-white py-1.5 px-3 rounded-md text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
-                    Copia
-                </button>
+                <!-- Aumentato rows da 5 a 15 per maggiore visibilità -->
+                <textarea id="outputString" readonly rows="15" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 shadow-sm sm:text-sm cursor-text font-mono text-xs"></textarea>
             </div>
             <p id="duplicateCountMessage" class="text-sm text-gray-600 mt-2 text-center"></p>
-            <p id="copyMessage" class="text-sm text-green-600 mt-2 text-center hidden">Copiato negli appunti!</p>
+            <p id="copyMessage" class="text-sm text-green-600 mt-2 text-center hidden font-bold">Copiato negli appunti!</p>
         </div>
     </div>
 
@@ -142,43 +148,43 @@
             const copyBtn = document.getElementById('copyBtn');
             const copyMessage = document.getElementById('copyMessage');
             const tSqlFlag = document.getElementById('tSqlFlag');
-            const duplicateCountMessage = document.getElementById('duplicateCountMessage'); // New element for duplicate count
+            const duplicateCountMessage = document.getElementById('duplicateCountMessage'); 
 
             // Function to concatenate text
             concatenateBtn.addEventListener('click', () => {
                 const inputText = textInput.value;
-                // Split the input by newlines, filter out empty lines, and trim whitespace
+                // Split by newlines, trim, and filter empty
                 const lines = inputText.split('\n')
                                        .map(line => line.trim())
                                        .filter(line => line !== '');
 
                 const originalCount = lines.length;
 
-                // Use a Set to remove duplicates
+                // Remove duplicates
                 const uniqueLines = [...new Set(lines)];
                 const uniqueCount = uniqueLines.length;
                 const duplicatesRemoved = originalCount - uniqueCount;
 
                 let result = '';
                 if (tSqlFlag.checked) {
-                    // If T-SQL flag is active, enclose each item in single quotes and join with comma
+                    // T-SQL Format
                     const quotedLines = uniqueLines.map(line => `'${line}'`);
                     result = quotedLines.join(',');
                 } else {
-                    // Otherwise, join with pipe
+                    // Standard Format
                     result = uniqueLines.join('|');
                 }
 
-                // Display the result
+                // Display result
                 outputString.value = result;
-                outputContainer.classList.remove('hidden'); // Show the output area
-                copyMessage.classList.add('hidden'); // Hide copy message on new concatenation
+                outputContainer.classList.remove('hidden');
+                copyMessage.classList.add('hidden'); 
 
-                // Display duplicate count message
+                // Duplicate message logic
                 if (duplicatesRemoved > 0) {
                     duplicateCountMessage.textContent = `Rimossi ${duplicatesRemoved} duplicati.`;
                     duplicateCountMessage.classList.remove('text-gray-600');
-                    duplicateCountMessage.classList.add('text-orange-600'); // Highlight if duplicates removed
+                    duplicateCountMessage.classList.add('text-orange-600');
                 } else {
                     duplicateCountMessage.textContent = `Nessun duplicato rimosso.`;
                     duplicateCountMessage.classList.remove('text-orange-600');
@@ -188,23 +194,28 @@
 
             // Function to copy text to clipboard
             copyBtn.addEventListener('click', () => {
-                // Select the text in the output textarea
+                // 1. Select text visually
                 outputString.select();
-                outputString.setSelectionRange(0, 99999); // For mobile devices
+                
+                // MODIFICA CRITICA:
+                // Impostiamo il range alla lunghezza effettiva del testo, non a un numero arbitrario (99999).
+                // 99999 caratteri sono pochi per grossi dataset SQL.
+                // Ora prende outputString.value.length per coprire TUTTO il testo.
+                outputString.setSelectionRange(0, outputString.value.length); 
 
                 try {
-                    // Copy the text to the clipboard
                     document.execCommand('copy');
-                    copyMessage.classList.remove('hidden'); // Show copy message
+                    copyMessage.textContent = 'Copiato negli appunti!';
+                    copyMessage.classList.remove('hidden', 'text-red-600'); 
+                    copyMessage.classList.add('text-green-600');
+                    
                     setTimeout(() => {
-                        copyMessage.classList.add('hidden'); // Hide message after a few seconds
-                    }, 2000);
+                        copyMessage.classList.add('hidden');
+                    }, 3000);
                 } catch (err) {
                     console.error('Impossibile copiare il testo: ', err);
-                    // Fallback for browsers where execCommand might not work or is deprecated
-                    copyMessage.textContent = 'Errore durante la copia.';
-                    copyMessage.classList.remove('hidden');
-                    copyMessage.classList.remove('text-green-600');
+                    copyMessage.textContent = 'Errore durante la copia manuale.';
+                    copyMessage.classList.remove('hidden', 'text-green-600');
                     copyMessage.classList.add('text-red-600');
                 }
             });
