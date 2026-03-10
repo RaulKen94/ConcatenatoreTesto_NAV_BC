@@ -105,13 +105,34 @@
             <textarea id="textInput" rows="10" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Voce 1&#10;Voce 2&#10;Voce 3&#10;Voce 1"></textarea>
         </div>
 
-        <!-- T-SQL Flag -->
-        <div class="flex items-center justify-center space-x-3">
-            <label for="tSqlFlag" class="text-gray-700 font-medium">Formato T-SQL (apici singoli e virgola)</label>
-            <label class="toggle-switch">
-                <input type="checkbox" id="tSqlFlag">
-                <span class="slider"></span>
-            </label>
+        <!-- Opzioni di Formattazione -->
+        <div class="flex flex-wrap items-center justify-center gap-6">
+            <!-- T-SQL Flag -->
+            <div class="flex items-center space-x-3">
+                <label for="tSqlFlag" class="text-gray-700 font-medium">Formato T-SQL</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="tSqlFlag">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Uppercase Flag -->
+            <div class="flex items-center space-x-3">
+                <label for="upperFlag" class="text-gray-700 font-medium">To uppercase</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="upperFlag">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Lowercase Flag -->
+            <div class="flex items-center space-x-3">
+                <label for="lowerFlag" class="text-gray-700 font-medium">To lowercase</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="lowerFlag">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
 
         <!-- Action Button -->
@@ -148,7 +169,22 @@
             const copyBtn = document.getElementById('copyBtn');
             const copyMessage = document.getElementById('copyMessage');
             const tSqlFlag = document.getElementById('tSqlFlag');
+            const upperFlag = document.getElementById('upperFlag');
+            const lowerFlag = document.getElementById('lowerFlag');
             const duplicateCountMessage = document.getElementById('duplicateCountMessage'); 
+
+            // Logica di esclusione reciproca per i flag uppercase/lowercase
+            upperFlag.addEventListener('change', () => {
+                if (upperFlag.checked) {
+                    lowerFlag.checked = false;
+                }
+            });
+
+            lowerFlag.addEventListener('change', () => {
+                if (lowerFlag.checked) {
+                    upperFlag.checked = false;
+                }
+            });
 
             // Function to concatenate text
             concatenateBtn.addEventListener('click', () => {
@@ -173,6 +209,13 @@
                 } else {
                     // Standard Format
                     result = uniqueLines.join('|');
+                }
+
+                // Applica uppercase o lowercase se i flag sono attivi
+                if (upperFlag.checked) {
+                    result = result.toUpperCase();
+                } else if (lowerFlag.checked) {
+                    result = result.toLowerCase();
                 }
 
                 // Display result
