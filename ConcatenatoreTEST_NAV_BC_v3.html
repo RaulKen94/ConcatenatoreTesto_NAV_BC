@@ -89,6 +89,10 @@
             -ms-transform: translateX(16px);
             transform: translateX(16px);
         }
+        /* Fissiamo la larghezza del contatore per evitare spostamenti del layout */
+        #liveCounterContainer {
+            min-width: 120px;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -105,39 +109,46 @@
             <textarea id="textInput" rows="10" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Voce 1&#10;Voce 2&#10;Voce 3&#10;Voce 1"></textarea>
         </div>
 
-        <!-- Opzioni di Formattazione -->
-        <div class="flex flex-wrap items-center justify-center gap-6">
-            <!-- T-SQL Flag -->
-            <div class="flex items-center space-x-3">
-                <label for="tSqlFlag" class="text-gray-700 font-medium">Formato T-SQL</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="tSqlFlag">
-                    <span class="slider"></span>
-                </label>
+        <!-- Opzioni di Formattazione e Totale Live -->
+        <div class="flex items-center justify-between border-t pt-4">
+            <!-- Totale Live Input con larghezza fissa -->
+            <div id="liveCounterContainer" class="text-sm font-semibold text-gray-500 flex-shrink-0">
+                Righe totali: <span id="liveCounter" class="text-indigo-600 inline-block min-w-[20px]">0</span>
             </div>
 
-            <!-- Uppercase Flag -->
-            <div class="flex items-center space-x-3">
-                <label for="upperFlag" class="text-gray-700 font-medium">To uppercase</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="upperFlag">
-                    <span class="slider"></span>
-                </label>
-            </div>
+            <div class="flex items-center gap-4 sm:gap-6 flex-wrap justify-end">
+                <!-- T-SQL Flag -->
+                <div class="flex items-center space-x-2">
+                    <label for="tSqlFlag" class="text-gray-700 font-medium text-xs sm:text-sm whitespace-nowrap">Formato T-SQL</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="tSqlFlag">
+                        <span class="slider"></span>
+                    </label>
+                </div>
 
-            <!-- Lowercase Flag -->
-            <div class="flex items-center space-x-3">
-                <label for="lowerFlag" class="text-gray-700 font-medium">To lowercase</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="lowerFlag">
-                    <span class="slider"></span>
-                </label>
+                <!-- Uppercase Flag -->
+                <div class="flex items-center space-x-2">
+                    <label for="upperFlag" class="text-gray-700 font-medium text-xs sm:text-sm whitespace-nowrap">To uppercase</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="upperFlag">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Lowercase Flag -->
+                <div class="flex items-center space-x-2">
+                    <label for="lowerFlag" class="text-gray-700 font-medium text-xs sm:text-sm whitespace-nowrap">To lowercase</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="lowerFlag">
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
         </div>
 
         <!-- Action Button -->
         <button id="concatenateBtn" class="btn-primary w-full text-white py-3 px-4 rounded-lg font-semibold text-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-            Concatena Testo
+            Elabora
         </button>
 
         <!-- Output Area -->
@@ -155,7 +166,10 @@
                 <!-- Aumentato rows da 5 a 15 per maggiore visibilità -->
                 <textarea id="outputString" readonly rows="15" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 shadow-sm sm:text-sm cursor-text font-mono text-xs"></textarea>
             </div>
-            <p id="duplicateCountMessage" class="text-sm text-gray-600 mt-2 text-center"></p>
+            <div class="mt-2 space-y-1 text-center">
+                <p id="occurrenceMessage" class="text-sm font-medium text-indigo-700"></p>
+                <p id="duplicateCountMessage" class="text-sm text-gray-600"></p>
+            </div>
             <p id="copyMessage" class="text-sm text-green-600 mt-2 text-center hidden font-bold">Copiato negli appunti!</p>
         </div>
     </div>
@@ -172,6 +186,18 @@
             const upperFlag = document.getElementById('upperFlag');
             const lowerFlag = document.getElementById('lowerFlag');
             const duplicateCountMessage = document.getElementById('duplicateCountMessage'); 
+            const occurrenceMessage = document.getElementById('occurrenceMessage'); 
+            const liveCounter = document.getElementById('liveCounter');
+
+            // Funzione per contare le righe in tempo reale
+            const updateLiveCounter = () => {
+                const count = textInput.value.split('\n')
+                                       .map(line => line.trim())
+                                       .filter(line => line !== '').length;
+                liveCounter.textContent = count;
+            };
+
+            textInput.addEventListener('input', updateLiveCounter);
 
             // Logica di esclusione reciproca per i flag uppercase/lowercase
             upperFlag.addEventListener('change', () => {
@@ -223,7 +249,9 @@
                 outputContainer.classList.remove('hidden');
                 copyMessage.classList.add('hidden'); 
 
-                // Duplicate message logic
+                // Occurrence and Duplicate message logic
+                occurrenceMessage.textContent = `Input: ${originalCount} voci | Output: ${uniqueCount} voci`;
+                
                 if (duplicatesRemoved > 0) {
                     duplicateCountMessage.textContent = `Rimossi ${duplicatesRemoved} duplicati.`;
                     duplicateCountMessage.classList.remove('text-gray-600');
@@ -241,9 +269,6 @@
                 outputString.select();
                 
                 // MODIFICA CRITICA:
-                // Impostiamo il range alla lunghezza effettiva del testo, non a un numero arbitrario (99999).
-                // 99999 caratteri sono pochi per grossi dataset SQL.
-                // Ora prende outputString.value.length per coprire TUTTO il testo.
                 outputString.setSelectionRange(0, outputString.value.length); 
 
                 try {
